@@ -139,12 +139,44 @@ for( var i = 0; i < ctx.nclients; i++ ){
 
 process.stdout.write( 'Benchmark running ... ' );
 
-ctx.started = new Date().getTime() / 1000;
-ctx.running = ctx.nclients;
+create_data( function(){
+    ctx.started = new Date().getTime() / 1000;
+    ctx.running = ctx.nclients;
 
-ctx.clients.forEach( function(client){
-    client.connect();
+    ctx.clients.forEach( function(client){
+        client.connect();
+    });
 });
+
+function create_data( callback ){
+    var client = new Gibson.Client( ctx.dns ),
+        fatal  = function(m){
+            console.log( '\nERROR: ' + m );
+            process.exit(1);
+        };
+
+    client.on( 'connect', function(){
+        client.set( 0, ctx.create, ctx.value, function(e,d){
+            client.close();
+
+            if( d == ctx.value ){
+                callback();
+            }
+            else
+                fatal(e);
+        });
+    });
+
+    client.on( 'error', function(e){
+        fatal(e);
+    });
+
+    client.on( 'timeout', function(){
+        fatal('Operation timeout.')
+    });
+
+    client.connect();
+}
 
 function check_end_condition(){
     if( ctx.running <= 0 ){
@@ -165,21 +197,19 @@ function check_end_condition(){
 
 function do_benchmark(){
     var self = this;
+    var done = 0;
 
-    self.set( 0, ctx.create, ctx.value, function(e,d){
-        var done = 0;
+    for( var i = 0; i < ctx.requests; i++ ){
+        self.query( ctx.opcode, ctx.args, function(e,d){
+            if( e )
+                ctx.repl_errors++;
+            else
+                ctx.done++;
 
-        for( var i = 0; i < ctx.requests; i++ ){
-            self.query( ctx.opcode, ctx.args, function(e,d){
-                if( e )
-                    ctx.repl_errors++;
-                else
-                    ctx.done++;
+            if( ++done == ctx.requests ){
+                self.close();
+            }
+        });
+    }
 
-                if( ++done == ctx.requests ){
-                    self.close();
-                }
-            });
-        }
-    });
 }

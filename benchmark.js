@@ -109,6 +109,9 @@ if( ( ctx.opname in Gibson.Client.prototype ) == false ){
     process.exit(1);
 }
 
+ctx.opcode = Protocol.commands[ ctx.opname.toUpperCase() ];
+ctx.args   = ctx.argv.join(' ');
+
 for( var i = 0; i < ctx.nclients; i++ ){
     var client = new Gibson.Client( ctx.dns, ctx.timeout );
 
@@ -164,12 +167,10 @@ function do_benchmark(){
     var self = this;
 
     self.set( 0, ctx.create, ctx.value, function(e,d){
-        var opcode = Protocol.commands[ ctx.opname.toUpperCase() ],
-            args   = ctx.argv.join(' '),
-            done   = 0;
+        var done = 0;
 
         for( var i = 0; i < ctx.requests; i++ ){
-            self.query( opcode, args, function(e,d){
+            self.query( ctx.opcode, ctx.args, function(e,d){
                 if( e )
                     ctx.repl_errors++;
                 else

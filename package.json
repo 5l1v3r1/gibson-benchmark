@@ -1,7 +1,7 @@
 {
   "name": "gibson-benchmark",
   "description": "A benchmark utility for the Gibson cache server.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "http://gibson-db.in/",
   "author": "Simone Margaritelli <evilsocket@gmail.com>",
   "dependencies": {

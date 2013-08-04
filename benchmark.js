@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2013, Simone Margaritelli <evilsocket at gmail dot com>
+ * Copyright (c) 2013, Simone Margaritelli 
+ * <evilsocket@gmail.com>
+ * <http://www.evilsocket.net/>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,16 +58,11 @@ var argv = Optimist.usage( 'Gibson benchmark utility.', {
         boolean: false,
         short: 't'
     },
-    'key': {
-        description: 'The key to create before running the benchmark, default is "foo".',
+    'pre': {
+        description: 'The list of operations to execute before running the benchmark separated by ";", default is "SET 0 foo bar".',
         boolean: false,
-        short: 'k'
-    }, 
-    'value': {
-        description: 'The value to use for --key argument, default is "gibsoniscool".',
-        boolean: false,
-        short: 'v'
-    },  
+        short: 'p'
+    },
     'operator': {
         description: 'The operator to benchmark, default is "GET foo"',
         boolean: false,
@@ -85,8 +82,7 @@ ctx.nclients    = argv.clients  || argv.c || 50;
 ctx.timeout     = argv.timeout  || argv.t || 0;
 ctx.clients     = [];
 ctx.requests    = argv.requests || argv.r || 10000;
-ctx.create      = argv.key      || argv.k || 'foo';
-ctx.value       = argv.value    || argv.v || 'gibsoniscool';
+ctx.pre         = argv.pre      || argv.p || 'SET 0 foo bar';
 ctx.operator    = argv.operator || argv.o || 'GET foo';
 ctx.rps         = 0.0;
 ctx.io_errors   = 0;
@@ -99,6 +95,7 @@ ctx.finished    = 0;
 ctx.ellapsed    = 0;
 ctx.total       = ctx.nclients * ctx.requests;
 
+// parse operator to benchmark
 var split = ctx.operator.split(' ');
 
 ctx.opname   = split.shift();
@@ -111,6 +108,28 @@ if( ( ctx.opname in Gibson.Client.prototype ) == false ){
 
 ctx.opcode = Protocol.commands[ ctx.opname.toUpperCase() ];
 ctx.args   = ctx.argv.join(' ');
+
+// parse --pre list of operators
+var commands = ctx.pre.split(';');
+
+ctx.pre = [];
+for( var i in commands ){
+    var pre = {},
+        split = commands[i].trim().split(' ');
+
+    pre.opname = split.shift();
+    pre.argv   = split;
+    
+    if( ( pre.opname in Gibson.Client.prototype ) == false ){
+        console.log( 'Unknown operator "' + pre.opname + '", use --help to show the help menu.' );
+        process.exit(1);
+    }
+   
+    pre.opcode = Protocol.commands[ pre.opname.toUpperCase() ];
+    pre.args   = pre.argv.join(' ');
+
+    ctx.pre.push(pre);
+}
 
 for( var i = 0; i < ctx.nclients; i++ ){
     var client = new Gibson.Client( ctx.dns, ctx.timeout );
@@ -137,9 +156,11 @@ for( var i = 0; i < ctx.nclients; i++ ){
     ctx.clients.push(client);
 }
 
-process.stdout.write( 'Benchmark running ... ' );
+process.stdout.write( 'Executing pre operations ... ' );
 
-create_data( function(){
+execute_pre_operations( function(){
+    process.stdout.write( 'Done.\nBenchmark running ... ' );
+
     ctx.started = new Date().getTime() / 1000;
     ctx.running = ctx.nclients;
 
@@ -148,7 +169,7 @@ create_data( function(){
     });
 });
 
-function create_data( callback ){
+function execute_pre_operations( callback ){
     var client = new Gibson.Client( ctx.dns ),
         fatal  = function(m){
             console.log( '\nERROR: ' + m );
@@ -156,15 +177,19 @@ function create_data( callback ){
         };
 
     client.on( 'connect', function(){
-        client.set( 0, ctx.create, ctx.value, function(e,d){
-            client.close();
-
-            if( d == ctx.value ){
-                callback();
-            }
-            else
-                fatal(e);
-        });
+        var done = 0;
+        for( var i = 0; i < ctx.pre.length; i++ ){
+            var pre = ctx.pre[i];
+            client.query( pre.opcode, pre.args, function(e,d){
+                if( ++done == ctx.pre.length ){
+                    client.close();
+                    if( e )
+                        fatal(e);
+                    else
+                        callback();
+                }
+            });
+        }
     });
 
     client.on( 'error', function(e){

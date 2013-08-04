@@ -4,6 +4,7 @@ Gibson cache server benchmark utility.
 A non-blocking benchmark utility for Gibson cache server.
 
 <http://gibson-db.in/>
+<http://www.evilsocket.net/>
 
 Command Line Options
 ----------
@@ -13,8 +14,7 @@ Command Line Options
     --clients   The number of concurrent clients to use, default is 50.          
     --requests  The number of total requests to send per client, default 10000.  
     --timeout   Socket milli seconds timeout, default to 0 ( no timeout ).       
-    --key       The key to create before running the benchmark, default is "foo".
-    --value     The value to use for --key argument, default is "gibsoniscool".  
+    --pre       The list of operations to execute before running the benchmark separated by ";", default is "SET 0 foo bar".
     --operator  The operator to benchmark, default is "GET foo"   
 
 Examples
@@ -32,9 +32,13 @@ Benchmark the PING operator:
 
     node benchmark.js --operator PING
 
+Create two keys to benchmark the MGET operator:
+
+    node benchmark.js --pre 'SET 0 bench:a hello; SET 0 bench:b world' --operator 'MGET bench'
+
 License
 ---
 
 Released under the BSD license.  
-Copyright &copy; 2013, Simone Margaritelli <evilsocket@gmail.com>  
+Copyright &copy; 2013, Simone Margaritelli <http://www.evilsocket.net/>  
 All rights reserved.

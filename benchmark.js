@@ -29,7 +29,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 var Gibson = require('gibson-client');
-var Protocol = require('gibson-client/lib/protocol').Protocol;
 var Optimist = require('optimist');
 
 var argv = Optimist.usage( 'Gibson benchmark utility.', {
@@ -106,7 +105,7 @@ if( ( ctx.opname in Gibson.Client.prototype ) == false ){
     process.exit(1);
 }
 
-ctx.opcode = Protocol.commands[ ctx.opname.toUpperCase() ];
+ctx.opcode = Gibson.Protocol.commands[ ctx.opname.toUpperCase() ];
 ctx.args   = ctx.argv.join(' ');
 
 // parse --pre list of operators
@@ -125,7 +124,7 @@ for( var i in commands ){
         process.exit(1);
     }
    
-    pre.opcode = Protocol.commands[ pre.opname.toUpperCase() ];
+    pre.opcode = Gibson.Protocol.commands[ pre.opname.toUpperCase() ];
     pre.args   = pre.argv.join(' ');
 
     ctx.pre.push(pre);
@@ -236,5 +235,4 @@ function do_benchmark(){
             }
         });
     }
-
 }

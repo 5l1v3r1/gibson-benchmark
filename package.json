@@ -6,7 +6,7 @@
   "author": "Simone Margaritelli <evilsocket@gmail.com>",
   "dependencies": {
     "optimist": ">= 0.1.0",
-    "gibson-client": ">= 1.0.3"
+    "gibson-client": ">= 1.0.5"
   },
   "engines": {
     "node": ">=0.6.0"
